@@ -1,0 +1,94 @@
+{
+  "theme": "Light",
+  "archetype": "Archetype 1: Organic & Earthy",
+  "mood": "Warm, trustworthy, efficient, family-centric, and organic.",
+  "design_philosophy": "Avoid typical cold 'tech' or 'AI' tropes (no purple gradients or sterile neon). Instead, embrace a culinary and family-oriented warmth using organic colors, soft shapes, and highly accessible typography. The UI should feel like a modern, smart kitchen companion rather than a sterile database.",
+  "colors": {
+    "background": "#FDFCF0",
+    "surface": "#FFFFFF",
+    "surface_secondary": "#F3EFE6",
+    "primary": "#4A6741",
+    "primary_hover": "#3D5636",
+    "accent_alert": "#D35C3A",
+    "accent_alert_bg": "#FBEAE5",
+    "accent_success": "#5C8D89",
+    "accent_warning": "#E6A15C",
+    "text_primary": "#1C2018",
+    "text_secondary": "#5C6653",
+    "border": "#E8E3D2"
+  },
+  "typography": {
+    "primary_font": "Outfit",
+    "secondary_font": "Work Sans",
+    "rules": {
+      "headings": "font-outfit tracking-tight text-text_primary",
+      "body": "font-worksans leading-relaxed text-text_secondary",
+      "h1": "text-4xl sm:text-5xl font-semibold",
+      "h2": "text-2xl sm:text-3xl font-medium",
+      "h3": "text-xl sm:text-2xl font-medium",
+      "labels": "text-xs font-semibold uppercase tracking-widest text-text_secondary"
+    }
+  },
+  "spacing_and_layout": {
+    "container_padding": "p-6 md:p-8",
+    "grid_gap": "gap-6 md:gap-8",
+    "radius_large": "rounded-3xl",
+    "radius_medium": "rounded-2xl",
+    "radius_small": "rounded-xl",
+    "radius_button": "rounded-full"
+  },
+  "components": {
+    "cards": {
+      "style": "bg-surface rounded-3xl border border-border shadow-sm p-5",
+      "hover": "hover:shadow-md hover:-translate-y-1 transition-all duration-300"
+    },
+    "buttons": {
+      "primary": "bg-primary text-white rounded-full px-6 py-3 font-medium hover:bg-primary_hover transition-colors",
+      "secondary": "bg-surface_secondary text-primary rounded-full px-6 py-3 font-medium hover:bg-[#E8E3D2] transition-colors"
+    },
+    "alerts": {
+      "expiring": "bg-accent_alert_bg text-accent_alert rounded-2xl p-4 flex items-center gap-3"
+    },
+    "badges": {
+      "kid_friendly": "bg-[#F4F1E1] text-[#A67C00] rounded-full px-3 py-1 text-xs font-semibold",
+      "ai_generated": "bg-[#EBF2EA] text-primary rounded-full px-3 py-1 text-xs font-semibold flex items-center gap-1"
+    }
+  },
+  "motion_and_interaction": {
+    "hover_state": "All interactive elements must transition smoothly (duration 200-300ms, ease-out). Buttons and cards should slightly lift.",
+    "camera_scan_animation": "Use a subtle, warm-toned scanning line (e.g., sage green or terracotta) with an overlay over the live camera view. No sci-fi lasers.",
+    "page_transitions": "Fade and slight slide-up for entering content."
+  },
+  "icons_and_assets": {
+    "library": "lucide-react",
+    "style": "Use rounded, soft icons. Avoid sharp or overly technical iconography.",
+    "ai_icon_strategy": "Instead of stars/sparkles, use a sprout or chef hat icon to represent the AI Assistant."
+  },
+  "accessibility_and_testing": {
+    "contrast": "Ensure all text, especially white text on primary backgrounds, meets WCAG AA standards. Avoid low contrast gray-on-gray.",
+    "data_testid": "CRITICAL: ALL interactive elements (buttons, inputs, recipe cards, inventory items) MUST include a 'data-testid' attribute (e.g., 'data-testid=\"recipe-card-pancakes\"')."
+  },
+  "media_urls": {
+    "inventory_scan_demo": {
+      "url": "https://images.pexels.com/photos/4443439/pexels-photo-4443439.jpeg",
+      "description": "Inside of a well-stocked, colorful refrigerator for the camera scan simulation."
+    },
+    "kid_friendly_meal": {
+      "url": "https://images.pexels.com/photos/6970095/pexels-photo-6970095.jpeg",
+      "description": "Child eating a healthy meal, use as thumbnail for family-friendly recipe category."
+    },
+    "family_cooking": {
+      "url": "https://images.pexels.com/photos/4261783/pexels-photo-4261783.jpeg",
+      "description": "Father and son cooking together, use for the Family Profile or empty state."
+    }
+  },
+  "instructions_to_main_agent": [
+    "Build a mobile-first, dashboard-style interface with bottom navigation or a sticky bottom action bar.",
+    "Use the specified typography (Outfit for headings, Work Sans for body). Do NOT use Inter.",
+    "Implement the Fridge Inventory Dashboard using a bento-style grid for items.",
+    "Create the Camera Scan Simulation with a realistic viewfinder overlay, showing the `inventory_scan_demo` image.",
+    "Use the exact color hex codes provided to maintain the organic, warm aesthetic.",
+    "Ensure the AI Recipe Assistant features prominently but feels like a helpful kitchen guide rather than a chatbot.",
+    "CRITICAL: Add `data-testid` to all actionable components."
+  ]
+}
