@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { api } from "@/lib/api";
 import { Clock, Sprout, Leaf, X, ChefHat, Plus, Check, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
@@ -15,7 +15,7 @@ export default function Recipes() {
   const [openId, setOpenId] = useState(null);
   const [openRecipe, setOpenRecipe] = useState(null);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const params = { use_expiring: useExpiring };
@@ -29,9 +29,9 @@ export default function Recipes() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [kidOnly, maxPrep, useExpiring, allergens]);
 
-  useEffect(() => { load(); }, [kidOnly, maxPrep, useExpiring, allergens]);
+  useEffect(() => { load(); }, [load]);
 
   useEffect(() => {
     if (openId) {
@@ -102,52 +102,7 @@ export default function Recipes() {
       </div>
 
       {/* List */}
-      {loading ? (
-        <div className="text-center py-12 text-ash text-sm">Loading recipes...</div>
-      ) : recipes.length === 0 ? (
-        <div className="text-center py-12 text-ash text-sm" data-testid="recipes-empty">No recipes match your filters.</div>
-      ) : (
-        <div className="space-y-3" data-testid="recipes-list">
-          {recipes.map((r) => (
-            <button
-              key={r.id}
-              onClick={() => setOpenId(r.id)}
-              data-testid={`recipe-${r.id}`}
-              className="card-lift w-full bg-white border border-line rounded-3xl overflow-hidden text-left flex flex-col sm:flex-row gap-0 sm:gap-3"
-            >
-              <div className="sm:w-40 aspect-[16/9] sm:aspect-[4/3] bg-oat shrink-0 overflow-hidden">
-                <img src={r.image_url} alt={r.title} className="w-full h-full object-cover" />
-              </div>
-              <div className="p-4 flex-1">
-                <div className="flex items-center gap-1.5 flex-wrap mb-1.5">
-                  {r.kid_friendly && (
-                    <span className="bg-[#F4F1E1] text-[#A67C00] rounded-full px-2 py-0.5 text-[10px] font-semibold">Kid-friendly</span>
-                  )}
-                  {r.uses_expiring?.length > 0 && (
-                    <span className="bg-sage-light text-sage-dark rounded-full px-2 py-0.5 text-[10px] font-semibold flex items-center gap-0.5">
-                      <Leaf className="w-2.5 h-2.5" /> Uses expiring
-                    </span>
-                  )}
-                  <span className="text-ash text-[10px] flex items-center gap-0.5">
-                    <Clock className="w-2.5 h-2.5" /> {r.prep_time_min} min
-                  </span>
-                </div>
-                <div className="font-outfit font-semibold text-ink text-base leading-tight">{r.title}</div>
-                <div className="text-xs text-ash mt-1 line-clamp-2">{r.description}</div>
-                <div className="mt-2.5 flex items-center justify-between">
-                  <div className="text-[11px] text-ash">
-                    <span className="font-semibold text-sage-dark">{r.ingredients_have}</span>
-                    /{r.ingredients_total} ingredients ready
-                  </div>
-                  <div className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-sage-light text-sage-dark">
-                    {r.match_score}% match
-                  </div>
-                </div>
-              </div>
-            </button>
-          ))}
-        </div>
-      )}
+      <RecipesListSection loading={loading} recipes={recipes} setOpenId={setOpenId} />
 
       {/* Detail modal */}
       {openId && (
@@ -157,6 +112,62 @@ export default function Recipes() {
         />
       )}
     </div>
+  );
+}
+
+function RecipesListSection({ loading, recipes, setOpenId }) {
+  if (loading) {
+    return <div className="text-center py-12 text-ash text-sm">Loading recipes...</div>;
+  }
+  if (recipes.length === 0) {
+    return <div className="text-center py-12 text-ash text-sm" data-testid="recipes-empty">No recipes match your filters.</div>;
+  }
+  return (
+    <div className="space-y-3" data-testid="recipes-list">
+      {recipes.map((r) => (
+        <RecipeRow key={r.id} recipe={r} onOpen={() => setOpenId(r.id)} />
+      ))}
+    </div>
+  );
+}
+
+function RecipeRow({ recipe: r, onOpen }) {
+  return (
+    <button
+      onClick={onOpen}
+      data-testid={`recipe-${r.id}`}
+      className="card-lift w-full bg-white border border-line rounded-3xl overflow-hidden text-left flex flex-col sm:flex-row gap-0 sm:gap-3"
+    >
+      <div className="sm:w-40 aspect-[16/9] sm:aspect-[4/3] bg-oat shrink-0 overflow-hidden">
+        <img src={r.image_url} alt={r.title} className="w-full h-full object-cover" />
+      </div>
+      <div className="p-4 flex-1">
+        <div className="flex items-center gap-1.5 flex-wrap mb-1.5">
+          {r.kid_friendly && (
+            <span className="bg-[#F4F1E1] text-[#A67C00] rounded-full px-2 py-0.5 text-[10px] font-semibold">Kid-friendly</span>
+          )}
+          {r.uses_expiring?.length > 0 && (
+            <span className="bg-sage-light text-sage-dark rounded-full px-2 py-0.5 text-[10px] font-semibold flex items-center gap-0.5">
+              <Leaf className="w-2.5 h-2.5" /> Uses expiring
+            </span>
+          )}
+          <span className="text-ash text-[10px] flex items-center gap-0.5">
+            <Clock className="w-2.5 h-2.5" /> {r.prep_time_min} min
+          </span>
+        </div>
+        <div className="font-outfit font-semibold text-ink text-base leading-tight">{r.title}</div>
+        <div className="text-xs text-ash mt-1 line-clamp-2">{r.description}</div>
+        <div className="mt-2.5 flex items-center justify-between">
+          <div className="text-[11px] text-ash">
+            <span className="font-semibold text-sage-dark">{r.ingredients_have}</span>
+            /{r.ingredients_total} ingredients ready
+          </div>
+          <div className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-sage-light text-sage-dark">
+            {r.match_score}% match
+          </div>
+        </div>
+      </div>
+    </button>
   );
 }
 
@@ -238,8 +249,8 @@ function RecipeDetail({ recipe, onClose }) {
                   </div>
                 </div>
                 <ul className="space-y-1.5" data-testid="recipe-ingredients">
-                  {recipe.ingredients.map((ing, i) => (
-                    <li key={i} className="flex items-center justify-between text-sm py-1.5 px-3 rounded-2xl bg-white border border-line">
+                  {recipe.ingredients.map((ing) => (
+                    <li key={`${recipe.id}-ing-${ing.name}`} className="flex items-center justify-between text-sm py-1.5 px-3 rounded-2xl bg-white border border-line">
                       <span className={`flex items-center gap-2 ${ing.have ? "text-ink" : "text-ash line-through decoration-terracotta/50"}`}>
                         {ing.have ? (
                           <Check className="w-3.5 h-3.5 text-sage-dark" strokeWidth={3} />
@@ -258,7 +269,7 @@ function RecipeDetail({ recipe, onClose }) {
                 <div className="text-[11px] uppercase tracking-[0.14em] text-ash font-semibold mb-2">Steps</div>
                 <ol className="space-y-2" data-testid="recipe-steps">
                   {recipe.steps.map((s, i) => (
-                    <li key={i} className="flex gap-3 text-sm text-ink">
+                    <li key={`${recipe.id}-step-${i}`} className="flex gap-3 text-sm text-ink">
                       <span className="w-6 h-6 rounded-full bg-sage-light text-sage-dark text-xs font-semibold flex items-center justify-center shrink-0 mt-0.5">
                         {i + 1}
                       </span>

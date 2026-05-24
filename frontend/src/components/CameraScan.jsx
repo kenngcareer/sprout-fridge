@@ -17,9 +17,11 @@ export default function CameraScan({ onClose, onCommit }) {
       const minDelay = 2400;
       const wait = Math.max(0, minDelay - elapsed);
       setTimeout(() => {
-        setDetected(detected);
+        // Assign stable IDs so React keys don't rely on array index
+        const withIds = detected.map((d, i) => ({ ...d, _id: `${d.name}-${i}-${start}` }));
+        setDetected(withIds);
         const initSel = {};
-        detected.forEach((d, i) => { initSel[i] = true; });
+        withIds.forEach((d) => { initSel[d._id] = true; });
         setSelected(initSel);
         setPhase("review");
       }, wait);
@@ -27,10 +29,12 @@ export default function CameraScan({ onClose, onCommit }) {
       toast.error("Scan failed");
       onClose();
     });
-  }, [onClose]);
+    // onClose is captured intentionally; effect runs once on mount to start the scan.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleCommit = async () => {
-    const items = detected.filter((_, i) => selected[i]).map((d) => ({
+    const items = detected.filter((d) => selected[d._id]).map((d) => ({
       name: d.name,
       category: d.category,
       quantity: d.quantity,
@@ -100,13 +104,13 @@ export default function CameraScan({ onClose, onCommit }) {
                 <Sparkles className="w-3.5 h-3.5 text-sage-dark" />
                 Found <span className="font-semibold text-ink">{detected.length}</span> items. Tap to include.
               </div>
-              {detected.map((d, i) => (
+              {detected.map((d) => (
                 <button
-                  key={i}
-                  onClick={() => setSelected({ ...selected, [i]: !selected[i] })}
-                  data-testid={`detected-${i}`}
+                  key={d._id}
+                  onClick={() => setSelected({ ...selected, [d._id]: !selected[d._id] })}
+                  data-testid={`detected-${d._id}`}
                   className={`w-full flex items-center gap-3 p-3 rounded-2xl border transition-colors text-left ${
-                    selected[i] ? "bg-sage-light border-sage" : "bg-white border-line"
+                    selected[d._id] ? "bg-sage-light border-sage" : "bg-white border-line"
                   }`}
                 >
                   <span className="text-2xl">{d.emoji}</span>
@@ -117,7 +121,7 @@ export default function CameraScan({ onClose, onCommit }) {
                     </div>
                   </div>
                   <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
-                    selected[i] ? "bg-sage text-cream" : "bg-oat text-ash"
+                    selected[d._id] ? "bg-sage text-cream" : "bg-oat text-ash"
                   }`}>
                     <Check className="w-3.5 h-3.5" strokeWidth={3} />
                   </div>

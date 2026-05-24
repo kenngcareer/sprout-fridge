@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { api } from "@/lib/api";
 import { Plus, Trash2, Users, Shield, Sprout, Camera, Save } from "lucide-react";
 import { toast } from "sonner";
@@ -12,7 +12,7 @@ export default function Family() {
   const [newStaple, setNewStaple] = useState("");
   const [cameraOptIn, setCameraOptIn] = useState(true);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const data = await api.getFamily();
@@ -22,8 +22,8 @@ export default function Family() {
     } finally {
       setLoading(false);
     }
-  };
-  useEffect(() => { load(); }, []);
+  }, []);
+  useEffect(() => { load(); }, [load]);
 
   const save = async (updates) => {
     try {

@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { api } from "@/lib/api";
 import { Plus, Sparkles, Trash2, ShoppingBasket, Check, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
@@ -19,7 +19,7 @@ export default function Grocery() {
   const [newName, setNewName] = useState("");
   const [newCategory, setNewCategory] = useState("other");
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const data = await api.listGrocery();
@@ -29,8 +29,8 @@ export default function Grocery() {
     } finally {
       setLoading(false);
     }
-  };
-  useEffect(() => { load(); }, []);
+  }, []);
+  useEffect(() => { load(); }, [load]);
 
   const grouped = useMemo(() => {
     const map = {};
@@ -169,62 +169,79 @@ export default function Grocery() {
       </form>
 
       {/* List */}
-      {loading ? (
-        <div className="text-center py-12 text-ash text-sm">Loading...</div>
-      ) : items.length === 0 ? (
-        <div className="text-center py-12 text-ash text-sm" data-testid="grocery-empty">
-          Your grocery list is empty. Try "Auto-fill" to predict needs.
+      <GrocerySection
+        loading={loading}
+        items={items}
+        grouped={grouped}
+        onToggle={handleToggle}
+        onDelete={handleDelete}
+      />
+    </div>
+  );
+}
+
+function GrocerySection({ loading, items, grouped, onToggle, onDelete }) {
+  if (loading) {
+    return <div className="text-center py-12 text-ash text-sm">Loading...</div>;
+  }
+  if (items.length === 0) {
+    return (
+      <div className="text-center py-12 text-ash text-sm" data-testid="grocery-empty">
+        Your grocery list is empty. Try "Auto-fill" to predict needs.
+      </div>
+    );
+  }
+  return (
+    <div className="space-y-4" data-testid="grocery-list">
+      {Object.entries(grouped).map(([cat, list]) => (
+        <div key={cat}>
+          <div className="text-[11px] uppercase tracking-[0.14em] text-ash font-semibold px-1 mb-2 flex items-center gap-1.5">
+            <span>{categoryEmojis[cat] || "🛒"}</span> {cat}
+          </div>
+          <div className="space-y-2">
+            {list.map((it) => (
+              <GroceryRow key={it.id} item={it} onToggle={onToggle} onDelete={onDelete} />
+            ))}
+          </div>
         </div>
-      ) : (
-        <div className="space-y-4" data-testid="grocery-list">
-          {Object.entries(grouped).map(([cat, list]) => (
-            <div key={cat}>
-              <div className="text-[11px] uppercase tracking-[0.14em] text-ash font-semibold px-1 mb-2 flex items-center gap-1.5">
-                <span>{categoryEmojis[cat] || "🛒"}</span> {cat}
-              </div>
-              <div className="space-y-2">
-                {list.map((it) => {
-                  const src = sourceLabel[it.source] || sourceLabel.manual;
-                  return (
-                    <div
-                      key={it.id}
-                      data-testid={`grocery-item-${it.id}`}
-                      className={`bg-white border border-line rounded-2xl p-3 flex items-center gap-3 transition-opacity ${
-                        it.checked ? "opacity-50" : ""
-                      }`}
-                    >
-                      <button
-                        onClick={() => handleToggle(it)}
-                        data-testid={`grocery-toggle-${it.id}`}
-                        className={`w-7 h-7 rounded-full border-2 flex items-center justify-center transition-colors shrink-0 ${
-                          it.checked ? "bg-sage border-sage text-cream" : "border-line bg-white hover:border-sage"
-                        }`}
-                      >
-                        {it.checked && <Check className="w-4 h-4" strokeWidth={3} />}
-                      </button>
-                      <span className="text-2xl">{it.emoji}</span>
-                      <div className="flex-1 min-w-0">
-                        <div className={`font-outfit font-semibold text-sm leading-tight ${it.checked ? "line-through text-ash" : "text-ink"}`}>
-                          {it.name}
-                        </div>
-                        <div className="text-[11px] text-ash mt-0.5">{it.quantity} {it.unit}</div>
-                      </div>
-                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${src.color}`}>{src.label}</span>
-                      <button
-                        onClick={() => handleDelete(it.id)}
-                        data-testid={`grocery-delete-${it.id}`}
-                        className="w-8 h-8 rounded-full bg-oat hover:bg-terracotta-light flex items-center justify-center transition-colors"
-                      >
-                        <Trash2 className="w-3.5 h-3.5 text-terracotta" />
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
+      ))}
+    </div>
+  );
+}
+
+function GroceryRow({ item: it, onToggle, onDelete }) {
+  const src = sourceLabel[it.source] || sourceLabel.manual;
+  return (
+    <div
+      data-testid={`grocery-item-${it.id}`}
+      className={`bg-white border border-line rounded-2xl p-3 flex items-center gap-3 transition-opacity ${
+        it.checked ? "opacity-50" : ""
+      }`}
+    >
+      <button
+        onClick={() => onToggle(it)}
+        data-testid={`grocery-toggle-${it.id}`}
+        className={`w-7 h-7 rounded-full border-2 flex items-center justify-center transition-colors shrink-0 ${
+          it.checked ? "bg-sage border-sage text-cream" : "border-line bg-white hover:border-sage"
+        }`}
+      >
+        {it.checked && <Check className="w-4 h-4" strokeWidth={3} />}
+      </button>
+      <span className="text-2xl">{it.emoji}</span>
+      <div className="flex-1 min-w-0">
+        <div className={`font-outfit font-semibold text-sm leading-tight ${it.checked ? "line-through text-ash" : "text-ink"}`}>
+          {it.name}
         </div>
-      )}
+        <div className="text-[11px] text-ash mt-0.5">{it.quantity} {it.unit}</div>
+      </div>
+      <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${src.color}`}>{src.label}</span>
+      <button
+        onClick={() => onDelete(it.id)}
+        data-testid={`grocery-delete-${it.id}`}
+        className="w-8 h-8 rounded-full bg-oat hover:bg-terracotta-light flex items-center justify-center transition-colors"
+      >
+        <Trash2 className="w-3.5 h-3.5 text-terracotta" />
+      </button>
     </div>
   );
 }

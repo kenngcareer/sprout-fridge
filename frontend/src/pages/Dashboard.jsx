@@ -40,6 +40,8 @@ export default function Dashboard() {
         setStats(s); setAlerts(a); setFamily(f); setTopRecipe(r[0] || null);
       })
       .catch((e) => console.error("dashboard load", e));
+    // Mount-only fetch; setters and api are stable references.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const greeting = (() => {

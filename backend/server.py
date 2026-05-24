@@ -4,7 +4,7 @@ from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
-import random
+import secrets
 from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional, Dict, Any
@@ -518,9 +518,9 @@ async def delete_inventory(item_id: str):
 @api_router.post("/inventory/scan")
 async def simulate_scan():
     """Simulate a camera scan returning detected items with confidence scores."""
-    pool = SCAN_POOL.copy()
-    random.shuffle(pool)
-    detected = pool[: random.randint(5, 7)]
+    rng = secrets.SystemRandom()
+    k = rng.randint(5, 7)
+    detected = rng.sample(SCAN_POOL, k=k)
     result = []
     for d in detected:
         result.append({

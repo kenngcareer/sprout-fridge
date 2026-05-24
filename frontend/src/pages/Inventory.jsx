@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { api, formatDays, freshnessLabel, freshnessColor } from "@/lib/api";
 import { Camera, Plus, Search, Trash2, Pencil, X, Check, Filter } from "lucide-react";
 import { toast } from "sonner";
@@ -24,7 +24,7 @@ export default function Inventory() {
   const [loading, setLoading] = useState(true);
   const [onlyExpiring, setOnlyExpiring] = useState(false);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const data = await api.listInventory();
@@ -34,9 +34,9 @@ export default function Inventory() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [load]);
 
   const filtered = useMemo(() => {
     return items.filter((it) => {
@@ -136,63 +136,13 @@ export default function Inventory() {
       </div>
 
       {/* Items grid */}
-      {loading ? (
-        <div className="text-center py-12 text-ash text-sm">Loading...</div>
-      ) : filtered.length === 0 ? (
-        <div className="text-center py-12 text-ash text-sm" data-testid="inventory-empty">
-          No items found. Try scanning your fridge.
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 gap-3" data-testid="inventory-list">
-          {filtered.map((it) => (
-            <div
-              key={it.id}
-              className="card-lift bg-white border border-line rounded-3xl p-4 flex flex-col gap-2"
-              data-testid={`inv-item-${it.id}`}
-            >
-              <div className="flex items-start justify-between">
-                <span className="text-3xl">{it.emoji}</span>
-                <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${freshnessColor(it.freshness)}`}>
-                  {freshnessLabel(it.freshness)}
-                </span>
-              </div>
-              <div>
-                <div className="font-outfit font-semibold text-ink text-[15px] leading-tight">{it.name}</div>
-                <div className="text-xs text-ash mt-0.5 capitalize">{it.category}</div>
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-ash">{it.quantity} {it.unit}</span>
-                <span className={`font-semibold ${["expiring", "expired"].includes(it.freshness) ? "text-terracotta" : "text-ash"}`}>
-                  {formatDays(it.expires_at)}
-                </span>
-              </div>
-              <div className="flex gap-1.5 mt-1 pt-2 border-t border-line">
-                <button
-                  onClick={() => handleUseOne(it)}
-                  data-testid={`btn-use-${it.id}`}
-                  className="flex-1 bg-sage-light text-sage-dark rounded-full py-1.5 text-[11px] font-semibold hover:bg-sage hover:text-cream transition-colors"
-                >
-                  Used one
-                </button>
-                <button
-                  onClick={() => setEditing(it)}
-                  data-testid={`btn-edit-${it.id}`}
-                  className="w-8 h-8 rounded-full bg-oat hover:bg-line flex items-center justify-center transition-colors"
-                >
-                  <Pencil className="w-3.5 h-3.5 text-ink" />
-                </button>
-                <button
-                  onClick={() => handleDelete(it.id)}
-                  data-testid={`btn-delete-${it.id}`}
-                  className="w-8 h-8 rounded-full bg-oat hover:bg-terracotta-light flex items-center justify-center transition-colors"
-                >
-                  <Trash2 className="w-3.5 h-3.5 text-terracotta" />
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+      <InventoryGrid
+        loading={loading}
+        items={filtered}
+        onUseOne={handleUseOne}
+        onEdit={setEditing}
+        onDelete={handleDelete}
+      />
 
       {showScan && (
         <CameraScan
@@ -207,6 +157,76 @@ export default function Inventory() {
           onSaved={async () => { await load(); setEditing(null); }}
         />
       )}
+    </div>
+  );
+}
+
+function InventoryGrid({ loading, items, onUseOne, onEdit, onDelete }) {
+  if (loading) {
+    return <div className="text-center py-12 text-ash text-sm">Loading...</div>;
+  }
+  if (items.length === 0) {
+    return (
+      <div className="text-center py-12 text-ash text-sm" data-testid="inventory-empty">
+        No items found. Try scanning your fridge.
+      </div>
+    );
+  }
+  return (
+    <div className="grid grid-cols-2 gap-3" data-testid="inventory-list">
+      {items.map((it) => (
+        <InventoryCard key={it.id} item={it} onUseOne={onUseOne} onEdit={onEdit} onDelete={onDelete} />
+      ))}
+    </div>
+  );
+}
+
+function InventoryCard({ item: it, onUseOne, onEdit, onDelete }) {
+  const isUrgent = ["expiring", "expired"].includes(it.freshness);
+  return (
+    <div
+      className="card-lift bg-white border border-line rounded-3xl p-4 flex flex-col gap-2"
+      data-testid={`inv-item-${it.id}`}
+    >
+      <div className="flex items-start justify-between">
+        <span className="text-3xl">{it.emoji}</span>
+        <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${freshnessColor(it.freshness)}`}>
+          {freshnessLabel(it.freshness)}
+        </span>
+      </div>
+      <div>
+        <div className="font-outfit font-semibold text-ink text-[15px] leading-tight">{it.name}</div>
+        <div className="text-xs text-ash mt-0.5 capitalize">{it.category}</div>
+      </div>
+      <div className="flex items-center justify-between text-xs">
+        <span className="text-ash">{it.quantity} {it.unit}</span>
+        <span className={`font-semibold ${isUrgent ? "text-terracotta" : "text-ash"}`}>
+          {formatDays(it.expires_at)}
+        </span>
+      </div>
+      <div className="flex gap-1.5 mt-1 pt-2 border-t border-line">
+        <button
+          onClick={() => onUseOne(it)}
+          data-testid={`btn-use-${it.id}`}
+          className="flex-1 bg-sage-light text-sage-dark rounded-full py-1.5 text-[11px] font-semibold hover:bg-sage hover:text-cream transition-colors"
+        >
+          Used one
+        </button>
+        <button
+          onClick={() => onEdit(it)}
+          data-testid={`btn-edit-${it.id}`}
+          className="w-8 h-8 rounded-full bg-oat hover:bg-line flex items-center justify-center transition-colors"
+        >
+          <Pencil className="w-3.5 h-3.5 text-ink" />
+        </button>
+        <button
+          onClick={() => onDelete(it.id)}
+          data-testid={`btn-delete-${it.id}`}
+          className="w-8 h-8 rounded-full bg-oat hover:bg-terracotta-light flex items-center justify-center transition-colors"
+        >
+          <Trash2 className="w-3.5 h-3.5 text-terracotta" />
+        </button>
+      </div>
     </div>
   );
 }

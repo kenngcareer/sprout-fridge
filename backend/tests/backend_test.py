@@ -172,7 +172,7 @@ class TestGrocery:
 
         r = session.patch(f"{API}/grocery/{item_id}", json={"checked": True})
         assert r.status_code == 200
-        assert r.json()["checked"] is True
+        assert r.json()["checked"] == True
 
         r = session.delete(f"{API}/grocery/{item_id}")
         assert r.status_code == 200
