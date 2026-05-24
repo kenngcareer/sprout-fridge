@@ -24,8 +24,8 @@ export default function Recipes() {
       if (allergens.length) params.exclude_allergens = allergens.join(",");
       const data = await api.listRecipes(params);
       setRecipes(data);
-    } catch (e) {
-      console.error(e);
+    } catch {
+      toast.error("Couldn't load recipes");
     } finally {
       setLoading(false);
     }

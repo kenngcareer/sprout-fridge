@@ -552,51 +552,65 @@ async def commit_scan(payload: ScanCommit):
 
 
 # ----------------------- Recipes -----------------------
+def _build_recipe_query(kid_friendly: Optional[bool], max_prep: Optional[int]) -> Dict[str, Any]:
+    query: Dict[str, Any] = {}
+    if kid_friendly is not None:
+        query["kid_friendly"] = kid_friendly
+    if max_prep is not None:
+        query["prep_time_min"] = {"$lte": max_prep}
+    return query
+
+
+def _filter_by_allergens(recipes: List[Dict[str, Any]], exclude_allergens: Optional[str]) -> List[Dict[str, Any]]:
+    if not exclude_allergens:
+        return recipes
+    bad = [a.strip().lower() for a in exclude_allergens.split(",") if a.strip()]
+    return [r for r in recipes if not any(a in r.get("allergens", []) for a in bad)]
+
+
+async def _load_inventory_index() -> tuple[set[str], set[str]]:
+    inv = await db.inventory.find({}, {"_id": 0}).to_list(1000)
+    have_names = {i["name"].lower() for i in inv}
+    expiring_names = {
+        i["name"].lower()
+        for i in inv
+        if compute_freshness(i.get("expires_at")) in ("expiring", "good")
+    }
+    return have_names, expiring_names
+
+
+def _annotate_match(recipe: Dict[str, Any], have_names: set[str], expiring_names: set[str]) -> None:
+    have = 0
+    missing: List[str] = []
+    uses_expiring: List[str] = []
+    for ing in recipe.get("ingredients", []):
+        iname = ing["name"].lower()
+        if iname in have_names:
+            have += 1
+            if iname in expiring_names:
+                uses_expiring.append(ing["name"])
+        else:
+            missing.append(ing["name"])
+    total = max(len(recipe.get("ingredients", [])), 1)
+    recipe["ingredients_have"] = have
+    recipe["ingredients_total"] = total
+    recipe["match_score"] = round(have / total * 100)
+    recipe["missing_ingredients"] = missing
+    recipe["uses_expiring"] = uses_expiring
+
+
 @api_router.get("/recipes")
 async def list_recipes(
     kid_friendly: Optional[bool] = None,
     max_prep: Optional[int] = None,
     exclude_allergens: Optional[str] = None,
     use_expiring: bool = False,
-):
-    query = {}
-    if kid_friendly is not None:
-        query["kid_friendly"] = kid_friendly
-    if max_prep is not None:
-        query["prep_time_min"] = {"$lte": max_prep}
-    recipes = await db.recipes.find(query, {"_id": 0}).to_list(1000)
-
-    if exclude_allergens:
-        bad = [a.strip().lower() for a in exclude_allergens.split(",") if a.strip()]
-        recipes = [r for r in recipes if not any(a in r.get("allergens", []) for a in bad)]
-
-    # Compute ingredient availability against inventory
-    inv = await db.inventory.find({}, {"_id": 0}).to_list(1000)
-    inv_names = {i["name"].lower(): i for i in inv}
-    expiring_names = {
-        i["name"].lower() for i in inv if compute_freshness(i.get("expires_at")) in ("expiring", "good")
-    }
-
+) -> List[Dict[str, Any]]:
+    recipes = await db.recipes.find(_build_recipe_query(kid_friendly, max_prep), {"_id": 0}).to_list(1000)
+    recipes = _filter_by_allergens(recipes, exclude_allergens)
+    have_names, expiring_names = await _load_inventory_index()
     for r in recipes:
-        have = 0
-        missing = []
-        uses_expiring = []
-        for ing in r.get("ingredients", []):
-            iname = ing["name"].lower()
-            if iname in inv_names:
-                have += 1
-                if iname in expiring_names:
-                    uses_expiring.append(ing["name"])
-            else:
-                missing.append(ing["name"])
-        total = max(len(r.get("ingredients", [])), 1)
-        r["ingredients_have"] = have
-        r["ingredients_total"] = total
-        r["match_score"] = round(have / total * 100)
-        r["missing_ingredients"] = missing
-        r["uses_expiring"] = uses_expiring
-
-    # Sort: prioritize expiring usage, then match score
+        _annotate_match(r, have_names, expiring_names)
     if use_expiring:
         recipes.sort(key=lambda r: (-(len(r["uses_expiring"])), -r["match_score"]))
     else:

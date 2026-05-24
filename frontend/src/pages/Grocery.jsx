@@ -24,8 +24,8 @@ export default function Grocery() {
     try {
       const data = await api.listGrocery();
       setItems(data);
-    } catch (e) {
-      console.error(e);
+    } catch {
+      toast.error("Couldn't load grocery list");
     } finally {
       setLoading(false);
     }

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api, formatDays } from "@/lib/api";
+import { toast } from "sonner";
 import { AlertTriangle, ArrowUpRight, ChefHat, Camera, ShoppingBasket, Sprout, Leaf, Clock } from "lucide-react";
 
 const Stat = ({ label, value, sub, testid }) => (
@@ -39,7 +40,7 @@ export default function Dashboard() {
       .then(([s, a, f, r]) => {
         setStats(s); setAlerts(a); setFamily(f); setTopRecipe(r[0] || null);
       })
-      .catch((e) => console.error("dashboard load", e));
+      .catch(() => toast.error("Couldn't load dashboard"));
     // Mount-only fetch; setters and api are stable references.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

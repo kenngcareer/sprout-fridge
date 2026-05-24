@@ -29,8 +29,8 @@ export default function Inventory() {
     try {
       const data = await api.listInventory();
       setItems(data);
-    } catch (e) {
-      console.error(e);
+    } catch {
+      toast.error("Couldn't load inventory");
     } finally {
       setLoading(false);
     }

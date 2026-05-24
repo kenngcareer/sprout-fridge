@@ -17,8 +17,8 @@ export default function Family() {
     try {
       const data = await api.getFamily();
       setFamily(data);
-    } catch (e) {
-      console.error(e);
+    } catch {
+      toast.error("Couldn't load household");
     } finally {
       setLoading(false);
     }
