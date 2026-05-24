@@ -1,0 +1,56 @@
+{
+  "summary": "End-to-end testing of Sprout (smart-fridge) MVP. Backend: 24/24 pytest tests passing across health, inventory CRUD, scan + commit, recipes (filters, detail, match scoring), grocery (CRUD, auto-replenish, from-recipe), family (get/patch members & household), alerts and stats. Frontend: app loads cleanly on mobile viewport; dashboard renders 4 stat cards + alerts card + featured recipe + 3 quick-action links; bottom nav routes correctly; inventory list renders 16 seeded items with category filters and search working; scan dialog opens and detection results render; recipes list with filters, detail dialog (ingredients with have-flag + steps) and add-to-grocery work; grocery list with add/toggle/auto-replenish works; family page renders household name, members and staples. Two integration glitches observed during automated UI testing (both relate to Emergent preview badge intercepting clicks at the bottom-right of the viewport).",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "ItemDialog", "issue": "Emergent preview badge (fixed bottom-right) overlays/intercepts pointer events on the 'Add item' / 'Save changes' submit button (data-testid=item-save). Form submits correctly via keyboard Enter, and a real desktop user can click it because the badge is small, but on mobile widths (390px) the badge sits visually on top of the submit button. Recommend raising dialog z-index above any external badge layer or adding bottom-padding to the dialog's footer so the submit button is positioned above the badge.", "selector": "[data-testid=item-save]", "priority": "MEDIUM"},
+      {"component": "CameraScan", "issue": "Same overlay issue: 'Add to fridge' button (data-testid=scan-commit) is intercepted by the Emergent preview badge at viewport bottom. Triggering by keyboard works; click does not. Add bottom safe-area / increase dialog z-index.", "selector": "[data-testid=scan-commit]", "priority": "MEDIUM"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "ItemDialog / CameraScan", "issues": ["Sticky footer with primary action sits too close to the viewport bottom on mobile; nothing reserves space for OS gesture / external floating badges. Add pb-6 / safe-area-inset-bottom."]}
+    ]
+  },
+  "data_testid_mismatches_vs_review_request_spec": {
+    "note": "The review request enumerated expected data-testids that do NOT match the implementation. Implementation is internally consistent but main agent should reconcile naming (or update PRD). Mismatches found:",
+    "mappings": {
+      "quick-action-scan / quick-action-recipes / quick-action-grocery": "actual: quick-scan / quick-recipes / quick-grocery",
+      "inventory-item-{id}": "actual: inv-item-{id}",
+      "btn-commit-scan": "actual: scan-commit",
+      "input-item-name": "actual: item-name",
+      "btn-save-item": "actual: item-save",
+      "toggle-kid-only / toggle-use-expiring": "actual: filter-kid / filter-expiring",
+      "btn-add-missing-to-grocery": "actual: recipe-add-grocery",
+      "btn-auto-fill": "actual: btn-auto-replenish",
+      "btn-clear-bought": "actual: btn-clear-checked",
+      "input-household-name": "actual: household-name",
+      "recipe-card-{id}": "actual: recipe-{id}"
+    }
+  },
+  "test_report_links": ["/app/backend/tests/backend_test.py", "/app/test_reports/pytest/pytest_results.xml"],
+  "action_items": [
+    "Raise dialog z-index (currently z-50) above any external embed badges, or add bottom safe-area padding to ItemDialog and CameraScan footers so the primary submit button is not occluded by the Emergent preview badge on mobile widths.",
+    "Optional: rename data-testids to match the review-request spec (or update spec) for consistency."
+  ],
+  "critical_code_review_comments": [
+    "server.py: GET /recipes computes ingredient availability using exact case-insensitive name match. This is brittle (e.g., 'Tortillas' in recipes is never in inventory). Acceptable for MVP but consider normalising/aliasing for accuracy of match_score.",
+    "server.py: /grocery/auto-replenish uses item['low_threshold'] as the grocery quantity. If a staple's low_threshold is 1 but actual low_stock condition is quantity <= low_threshold, you might want max(low_threshold, low_threshold*2) so the user is prompted to buy more than the minimum.",
+    "server.py: on_event('startup') is deprecated in newer FastAPI; consider lifespan handler.",
+    "Inventory.jsx: Search is case-insensitive on name only; no match against emoji/category. Minor.",
+    "ItemDialog/CameraScan: dialog z-index z-50 not sufficient to cover external floating widgets; consider z-[60] and pb-[env(safe-area-inset-bottom)].",
+    "Recipes.jsx: filter-kid / filter-expiring testids should arguably be toggle-* to match spec, but functionally fine."
+  ],
+  "updated_files": [
+    "/app/backend/tests/backend_test.py (new)"
+  ],
+  "success_rate": {"backend": "100% (24/24)", "frontend": "~90% (all flows render and respond; 2 click-overlay glitches in dialog submit area due to preview badge)"},
+  "test_credentials": "none - app is fully public, no auth",
+  "seed_data_creation": "Backend auto-seeds 16 inventory items, 10 recipes, 1 household with 4 members, 3 predicted grocery items on startup if collections are empty. Confirmed seeding works.",
+  "retest_needed": true,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend pytest suite at /app/backend/tests/backend_test.py covers all endpoints. Frontend UI is fully wired, but to drive the ItemDialog/Scan dialog submit buttons via Playwright on a 390px viewport the Emergent preview badge intercepts pointer events at the bottom-right; either hide it via CSS in test setup ('[id*=emergent]{display:none}') or submit via keyboard Enter. Data-testid naming in code uses inv-item-{id}, scan-commit, item-name/item-save, recipe-{id}, recipe-add-grocery, btn-auto-replenish, btn-clear-checked, household-name, member-{id} (not the names listed in the review request).",
+  "rca_of_dialog_click_issue": "The Sonner toaster + the Emergent preview floating badge sit at the bottom of the viewport at a high z-index. The ItemDialog/CameraScan modal footers stick to the bottom of the dialog with no extra padding, so the primary submit button visually overlaps the badge area on a 390px viewport. Playwright's pointer-based click hits the badge instead of the submit button. Mitigation: add `pb-[calc(env(safe-area-inset-bottom)+24px)]` to dialog footers OR raise dialog wrapper to `z-[60]` so it's above the badge."
+}

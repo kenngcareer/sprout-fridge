@@ -1,34 +1,55 @@
-.App-logo {
-    height: 40vmin;
-    pointer-events: none;
+.App {
+  min-height: 100vh;
+  background-color: #FDFCF0;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-    .App-logo {
-        animation: App-logo-spin infinite 20s linear;
-    }
+/* Camera scan overlay */
+.scan-frame {
+  position: relative;
+  overflow: hidden;
+  border-radius: 24px;
 }
 
-.App-header {
-    background-color: #0f0f10;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-size: calc(10px + 2vmin);
-    color: white;
+.scan-line {
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #4A6741 50%, transparent);
+  box-shadow: 0 0 16px rgba(74, 103, 65, 0.55);
+  border-radius: 2px;
+  top: 8%;
 }
 
-.App-link {
-    color: #61dafb;
+.detect-pulse {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: rgba(74, 103, 65, 0.9);
+  box-shadow: 0 0 0 0 rgba(74, 103, 65, 0.6);
+  animation: detect-pulse 1.4s ease-out infinite;
 }
 
-@keyframes App-logo-spin {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
+@keyframes detect-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(74, 103, 65, 0.6); }
+  100% { box-shadow: 0 0 0 16px rgba(74, 103, 65, 0); }
+}
+
+/* Item card hover lift */
+.card-lift {
+  transition: transform 250ms ease, box-shadow 250ms ease;
+}
+.card-lift:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 24px rgba(28, 32, 24, 0.08);
+}
+
+/* Bottom nav pill */
+.nav-pill {
+  transition: all 220ms ease;
+}
+.nav-pill[data-active="true"] {
+  background-color: #EBF2EA;
+  color: #3D5636;
 }
