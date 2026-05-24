@@ -52,9 +52,9 @@ export default function CameraScan({ onClose, onCommit }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-ink/40 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
+    <div className="fixed inset-0 z-[60] bg-ink/40 backdrop-blur-sm flex items-end sm:items-center justify-center p-4 pb-20 sm:pb-4">
       <div
-        className="bg-cream w-full max-w-md rounded-3xl border border-line shadow-2xl overflow-hidden animate-fade-up max-h-[92vh] flex flex-col"
+        className="bg-cream w-full max-w-md rounded-3xl border border-line shadow-2xl overflow-hidden animate-fade-up max-h-[88vh] flex flex-col"
         data-testid="scan-dialog"
       >
         <div className="flex items-center justify-between p-4 border-b border-line">
